@@ -1,4 +1,22 @@
-# React + Vite
+# StyleCom frontend
+
+## Demo storefront
+
+Run `npm install` and `npm run dev` from this directory. The storefront uses
+12 sample products by default, including six men's and six women's products.
+Images come from the existing `public` directory, so browsing and cart testing
+do not need a running backend or external product image service.
+
+Open a product card, choose a size and quantity, then add it to your cart.
+The cart supports quantity changes and removal and persists across refreshes.
+Demo checkout allows previewing totals without logging in; placing orders is
+disabled for sample products.
+
+To use real inventory, set `VITE_DEMO_DATA=false` and `VITE_API_URL` in `.env`,
+then restart Vite (or rebuild for deployment). Demo and live carts use separate
+browser storage keys. Edit `src/data/demoProducts.js` to change the sample data.
+
+## React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

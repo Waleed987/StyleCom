@@ -4,6 +4,7 @@ import api from "../api";
 import { ArrowLeft, CreditCard, Truck, CheckCircle } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { jwtDecode } from "jwt-decode";
+import { demoMode } from "../catalog";
 
 function Checkout() {
   const navigate = useNavigate();
@@ -53,6 +54,10 @@ function Checkout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (demoMode) {
+      setError('This is a demo checkout. Sample products cannot be ordered.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -164,6 +169,11 @@ function Checkout() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Shipping Information</h2>
+              {demoMode && (
+                <p className="mb-6 rounded-md bg-amber-50 p-4 text-sm text-amber-900">
+                  Demo checkout: explore your order summary. No order or payment will be submitted.
+                </p>
+              )}
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -254,10 +264,10 @@ function Checkout() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || demoMode}
                   className="w-full bg-black text-white py-3 px-6 rounded-md font-semibold text-lg hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Processing..." : "Place Order"}
+                  {demoMode ? "Demo only — ordering unavailable" : loading ? "Processing..." : "Place Order"}
                 </button>
               </form>
             </div>

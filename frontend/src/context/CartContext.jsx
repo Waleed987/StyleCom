@@ -1,4 +1,23 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { demoMode } from '../catalog';
+
+const cartStorageKey = demoMode ? 'demo-cart' : 'cart';
+
+function loadCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(cartStorageKey));
+    if (Array.isArray(saved?.items)) {
+      return { items: saved.items.filter(item =>
+        item && typeof item.productId === 'string' && typeof item.size === 'string' &&
+        Number.isFinite(item.price) && item.price >= 0 &&
+        Number.isInteger(item.quantity) && item.quantity > 0
+      ) };
+    }
+  } catch {
+    // Invalid or unavailable browser storage should not prevent shopping.
+  }
+  return { items: [] };
+}
 
 const CartContext = createContext();
 
@@ -13,7 +32,10 @@ const cartReducer = (state, action) => {
       if (existingItemIndex >= 0) {
         // If item with same product and size exists, update quantity
         const updatedItems = [...state.items];
-        updatedItems[existingItemIndex].quantity += action.payload.quantity;
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: updatedItems[existingItemIndex].quantity + action.payload.quantity,
+        };
         return { ...state, items: updatedItems };
       } else {
         // Add new item to cart
@@ -48,28 +70,15 @@ const cartReducer = (state, action) => {
 
 // Cart provider component
 export const CartProvider = ({ children }) => {
-  const [cartState, dispatch] = useReducer(cartReducer, {
-    items: []
-  });
-
-  // Load cart from localStorage on component mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        if (parsedCart.items) {
-          dispatch({ type: 'LOAD_CART', payload: parsedCart });
-        }
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
-      }
-    }
-  }, []);
+  const [cartState, dispatch] = useReducer(cartReducer, undefined, loadCart);
 
   // Save cart to localStorage whenever cart changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartState));
+    try {
+      localStorage.setItem(cartStorageKey, JSON.stringify(cartState));
+    } catch {
+      // Shopping still works when storage is unavailable.
+    }
   }, [cartState]);
 
   // Add item to cart

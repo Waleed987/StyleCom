@@ -109,7 +109,7 @@ function Navbar() {
         <div className='flex flex-row pt-2 space-x-4 pb-6 '>
           <Heart className='group-hover:text-black h-6 w-6 text-white'/>
 
-          <Handbag className='group-hover:text-black text-white h-6 w-6'/>
+          <Handbag onClick={cartClick} className='group-hover:text-black text-white h-6 w-6'/>
 
           <User className='group-hover:text-black text-white h-6 w-6'/>
         </div>

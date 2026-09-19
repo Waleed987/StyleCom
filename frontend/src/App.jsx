@@ -14,6 +14,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderDetail from './pages/OrderDetail'
 import { CartProvider } from './context/CartContext'
+import { demoMode } from './catalog'
 
 function App() { 
   
@@ -22,6 +23,7 @@ function App() {
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
         <CartProvider>
           <BrowserRouter>
+            {demoMode && <div className="bg-black px-4 py-2 text-center text-sm text-white">Demo store — sample products for browsing and cart testing.</div>}
             <Routes>
               <Route path='/admin' element={<Admin/>}/>
               <Route path='/login' element={<Login/>}/>

@@ -1,11 +1,13 @@
+import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { Search, Heart, Handbag, User, AlignJustify } from "lucide-react"; 
 // or wherever your icons come from
 import Card from "../components/Card";
-import api from "../api";
+import { getInventory } from "../catalog";
 
 
 function Navbar() {
+    const navigate = useNavigate();
     const [showDiv, setShowDiv] = useState(true);
 
     
@@ -85,7 +87,7 @@ function Navbar() {
           <div className='ml-40 flex flex-row pt-2 space-x-4'>
             <Heart className='text-black h-6 w-6 '/>
   
-            <Handbag className='text-black  h-6 w-6'/>
+            <Handbag onClick={() => navigate('/cart')} aria-label="Shopping cart" role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') navigate('/cart'); }} className='text-black  h-6 w-6'/>
   
             <User className='text-black  h-6 w-6'/>
           </div>
@@ -105,7 +107,7 @@ function Navbar() {
           <div className='flex flex-row pt-2 space-x-4 pb-6 '>
             <Heart className='group-hover:text-black h-6 w-6 '/>
   
-            <Handbag className='group-hover:text-black  h-6 w-6'/>
+            <Handbag onClick={() => navigate('/cart')} aria-label="Shopping cart" role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') navigate('/cart'); }} className='group-hover:text-black  h-6 w-6'/>
   
             <User className='group-hover:text-black  h-6 w-6'/>
           </div>
@@ -125,9 +127,8 @@ function Mens() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await api.get("/api/inventory/collection");
-        setInventoryItems(res.data.inventoryItems);
-        console.log("Inventory items:", res.data.inventoryItems);
+        const inventoryItems = await getInventory();
+        setInventoryItems(inventoryItems);
       } catch (error) {
         console.error("Error fetching inventory:", error);
       }

@@ -15,13 +15,13 @@ function Card({item}){
                 onClick={handleCardClick}
             >
                 <div className="h-85 w-[98%]">
-                    <img src={item?.imageUrl || "/hero.webp"} alt={item?.name || "Product"} className="h-full w-full object-cover" />
+                    <img src={item?.imageUrl || "/hero.webp"} alt={item?.productName || "Product"} className="h-full w-full object-cover" />
                 </div>
                 <div className="px-4 py-2 h-15 w-full  text-center break-words font-serif">
                     <p>{item?.productName || "Product Name"}</p>
                 </div>
                 <div className="h-10 w-full pt-1 text-center">
-                    <p>{item?.price || "RS. 120,3907"}</p>
+                    <p>Rs. {item.price.toLocaleString()}</p>
                 </div>      
             </div>
         </>

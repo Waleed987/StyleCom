@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Card from './Card';
-import api from '../api';
+import { getInventory } from '../catalog';
 
 function SoftboySeasonSection() {
   const [activeTab, setActiveTab] = useState('men');
@@ -14,9 +14,8 @@ function SoftboySeasonSection() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await api.get("/api/inventory/collection");
-        setproducts(res.data.inventoryItems);
-        console.log("Inventory items:", res.data.inventoryItems);
+        const inventoryItems = await getInventory();
+        setproducts(inventoryItems);
       } catch (error) {
         console.error("Error fetching inventory:", error);
       }
@@ -47,7 +46,8 @@ function SoftboySeasonSection() {
     return () => window.removeEventListener('resize', updateItemsPerView);
   }, []);
 
-  const maxSlides = Math.max(0, products.length - itemsPerView);
+  const visibleProducts = products.filter(item => activeTab === 'all' || item.gender === (activeTab === 'men' ? 'male' : 'female'));
+  const maxSlides = Math.max(0, visibleProducts.length - itemsPerView);
 
   const nextSlide = () => {
     setCurrentSlide(prev => Math.min(prev + 1, maxSlides));
@@ -68,7 +68,7 @@ function SoftboySeasonSection() {
         {/* Navigation Tabs */}
         <div className="flex items-center gap-4 md:gap-8 mb-6 md:mb-8 flex-wrap">
           <button
-            onClick={() => setActiveTab('men')}
+            onClick={() => { setActiveTab('men'); setCurrentSlide(0); }}
             className={`px-4 md:px-6 py-2 rounded-full border transition-all duration-300 text-sm md:text-base ${
               activeTab === 'men'
                 ? 'bg-black text-white border-black'
@@ -78,7 +78,7 @@ function SoftboySeasonSection() {
             Men's
           </button>
           <button
-            onClick={() => setActiveTab('women')}
+            onClick={() => { setActiveTab('women'); setCurrentSlide(0); }}
             className={`px-4 md:px-6 py-2 rounded-full border transition-all duration-300 text-sm md:text-base ${
               activeTab === 'women'
                 ? 'bg-black text-white border-black'
@@ -88,7 +88,7 @@ function SoftboySeasonSection() {
             Women's
           </button>
           <button
-            onClick={() => setActiveTab('all')}
+            onClick={() => { setActiveTab('all'); setCurrentSlide(0); }}
             className={`px-4 md:px-6 py-2 rounded-full border-b-2 transition-all duration-300 text-sm md:text-base ${
               activeTab === 'all'
                 ? 'border-black text-black'
@@ -125,17 +125,17 @@ function SoftboySeasonSection() {
         {/* Products Grid Container */}
         <div className="overflow-hidden rounded-lg">
           <div 
-            className="flex transition-transform duration-500 ease-in-out gap-4 md:gap-6"
+            className="flex transition-transform duration-500 ease-in-out gap-6"
             style={{ 
-              transform: `translateX(-${currentSlide * (100 / itemsPerView)}%)`,
-              width: `${(5 / itemsPerView) * 100}%`
+              transform: `translateX(calc(-${currentSlide} * (100% + 24px) / ${itemsPerView}))`,
+              width: '100%'
             }}
           >
-            {products.slice(0, 5).map((item) => (
+            {visibleProducts.map((item) => (
               <div 
                 key={item._id} 
                 className="group cursor-pointer flex-shrink-0"
-                style={{ width: `${100 / 5}%` }}
+                style={{ width: `calc((100% - ${(itemsPerView - 1) * 24}px) / ${itemsPerView})` }}
               >
                 <Card item={item} />
               </div>

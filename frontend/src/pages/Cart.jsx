@@ -4,6 +4,7 @@ import axios from "axios";
 import CartItem from "../components/Cartitem";
 import { ArrowLeft, ShoppingBag, CreditCard, Truck } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { demoMode } from "../catalog";
 
 function Cart() {
   const navigate = useNavigate();
@@ -32,6 +33,10 @@ function Cart() {
   };
 
   const handleCheckout = () => {
+    if (demoMode) {
+      navigate('/checkout');
+      return;
+    }
     // Check if user is logged in
     const token = localStorage.getItem('token');
     if (!token) {

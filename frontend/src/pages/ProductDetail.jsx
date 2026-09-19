@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useAsyncValue } from "react-router-dom";
 import { Search, Heart, Handbag, User, AlignJustify, ArrowLeft, Star } from "lucide-react";
-import api from "../api";
+import { getInventory } from "../catalog";
 import { useCart } from "../context/CartContext";
 
 
@@ -125,8 +125,8 @@ function ProductDetail() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await api.get(`/api/inventory/collection`);
-        const foundProduct = res.data.inventoryItems.find(item => item._id === productId);
+        const inventoryItems = await getInventory();
+        const foundProduct = inventoryItems.find(item => item._id === productId);
         if (foundProduct) {
           setProduct(foundProduct);
         } else {
