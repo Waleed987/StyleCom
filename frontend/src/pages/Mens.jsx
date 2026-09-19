@@ -89,7 +89,7 @@ function Navbar() {
   
             <Handbag onClick={() => navigate('/cart')} aria-label="Shopping cart" role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') navigate('/cart'); }} className='text-black  h-6 w-6'/>
   
-            <User className='text-black  h-6 w-6'/>
+            <User onClick={() => navigate('/account')} className='text-black h-6 w-6 cursor-pointer'/>
           </div>
         </div>
         
@@ -109,7 +109,7 @@ function Navbar() {
   
             <Handbag onClick={() => navigate('/cart')} aria-label="Shopping cart" role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') navigate('/cart'); }} className='group-hover:text-black  h-6 w-6'/>
   
-            <User className='group-hover:text-black  h-6 w-6'/>
+            <User onClick={() => navigate('/account')} className='group-hover:text-black h-6 w-6 cursor-pointer'/>
           </div>
       </nav>
   

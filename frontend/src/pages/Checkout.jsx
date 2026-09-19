@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { ArrowLeft, CreditCard, Truck, CheckCircle } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { jwtDecode } from "jwt-decode";
 import { demoMode } from "../catalog";
+import { useAuth } from "../context/AuthContext";
 
 function Checkout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { items: cartItems, getCartTotal, clearCart } = useCart();
+  const { token, user } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,18 +62,13 @@ function Checkout() {
     setError(null);
 
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      
       if (!token) {
         setError("Please login to continue");
         setLoading(false);
         return;
       }
 
-      // Decode token to get user ID
-      const decoded = jwtDecode(token);
-      const userId = decoded.userId;
+      const userId = user?.userId;
 
       if (!userId) {
         setError("User information not found");

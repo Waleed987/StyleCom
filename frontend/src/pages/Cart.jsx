@@ -1,17 +1,14 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import CartItem from "../components/Cartitem";
 import { ArrowLeft, ShoppingBag, CreditCard, Truck } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { demoMode } from "../catalog";
+import { useAuth } from "../context/AuthContext";
 
 function Cart() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { items: cartItems, updateQuantity, removeFromCart, getCartTotal, getCartItemCount } = useCart();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
   const handleUpdateQuantity = (productId, size, newQuantity) => {
     updateQuantity(productId, size, newQuantity);
   };
@@ -38,10 +35,8 @@ function Cart() {
       return;
     }
     // Check if user is logged in
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert("Please login to proceed to checkout");
-      navigate('/login');
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/checkout' } });
       return;
     }
     
@@ -52,33 +47,6 @@ function Cart() {
   const handleContinueShopping = () => {
     navigate('/all');
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your cart...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

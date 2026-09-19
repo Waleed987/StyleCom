@@ -24,7 +24,7 @@ const CartContext = createContext();
 // Cart reducer to manage cart state
 const cartReducer = (state, action) => {
   switch (action.type) {
-    case 'ADD_TO_CART':
+    case 'ADD_TO_CART': {
       const existingItemIndex = state.items.findIndex(
         item => item.productId === action.payload.productId && item.size === action.payload.size
       );
@@ -41,6 +41,7 @@ const cartReducer = (state, action) => {
         // Add new item to cart
         return { ...state, items: [...state.items, action.payload] };
       }
+    }
     
     case 'UPDATE_QUANTITY':
       return {
@@ -140,6 +141,7 @@ export const CartProvider = ({ children }) => {
 };
 
 // Custom hook to use cart context
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {

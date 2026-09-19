@@ -5,7 +5,8 @@ const Inventory = require('../models/inventory');
 // Create order from cart (checkout process)
 const createOrderFromCart = async (req, res) => {
     try {
-        const { userId, shippingAddress, paymentMethod } = req.body;
+        const { shippingAddress, paymentMethod } = req.body;
+        const userId = req.user.userId;
 
         // Get user's cart
         const userCart = await Cart.findOne({ userId }).populate('items.productId');
@@ -79,7 +80,7 @@ const createOrderFromCart = async (req, res) => {
 // Get user's order history
 const getUserOrders = async (req, res) => {
     try {
-        const { userId } = req.params;
+        const userId = req.user.userId;
         
         const orders = await Order.find({ userId })
             .populate('items.productId', 'productName imageUrl price')
@@ -139,6 +140,10 @@ const getOrderById = async (req, res) => {
                 success: false,
                 message: "Order not found"
             });
+        }
+
+        if (!req.user.isAdmin && order.userId._id.toString() !== req.user.userId) {
+            return res.status(403).json({ success: false, message: "You cannot view this order" });
         }
 
         res.status(200).json({
@@ -244,6 +249,10 @@ const cancelOrder = async (req, res) => {
                 success: false,
                 message: "Order not found"
             });
+        }
+
+        if (!req.user.isAdmin && order.userId.toString() !== req.user.userId) {
+            return res.status(403).json({ success: false, message: "You cannot cancel this order" });
         }
 
         // Only allow cancellation of pending orders

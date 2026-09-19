@@ -1,82 +1,125 @@
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const User = require('../models/User');
-const registerUser = async(req , res)=>{
-    try {
-        const {username, email,password,isAdmin} = req.body;
-        const userExists = await User.findOne({email});
-        if(userExists){
-            return res.status(500).json({msg : "User already Exists"});
-        }
-        const newUser = await User.create({username,email,password,isAdmin});
-        console.log("User created successfully" + newUser);
-        res.status(201).json({msg: "User created successfully", user: newUser});
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({msg: "Error creating user", error: error.message});
-    }
-}
 
-const loginUser = async(req,res)=>{
-    try {
-        const {email,password} = req.body;
-        const userExists = await User.findOne({email});
-        if(!userExists){
-            return res.status(500).json({msg:"User does not exist"});
-        }
-        
-        if(password!=userExists.password){
-            return res.status(500).json({msg:"Password not correct"});
-        }
-        return res.status(200).json(
-            {
-                msg:"Login Successful",
-                token :await userExists.generateToken(),
-                isAdmin: userExists.isAdmin || false
-            });
-    } catch (error) {
-        console.log("Error loging in " + error);
-        return res.status(500).json({msg:"Error logging in", error: error.message});
-    }
-}
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
 
-const googleLogin = async(req,res)=>{
+const publicUser = (user) => ({
+    userId: user._id.toString(),
+    username: user.username,
+    email: user.email,
+    isAdmin: Boolean(user.isAdmin),
+});
+
+const authResponse = async (user, message) => ({
+    message,
+    token: await user.generateToken(),
+    user: publicUser(user),
+});
+
+const registerUser = async (req, res) => {
     try {
-        console.log(req.body);
-        const {email, name, picture, googleId} = req.body;
-        
-        // Check if user exists with this email
-        let user = await User.findOne({email});
-        
-        if(!user){
-            // Create new user if they don't exist
-            user = await User.create({
-                username: name,
-                email: email,
-                googleId: googleId,
-                isAdmin: false,
-                // Set a default password for Google users (you might want to handle this differently)
-                password: 'google-auth-' + Date.now()
-            });
-            console.log("Google user created successfully:", user);
-        } else {
-            // Update existing user with Google ID if not already set
-            if(!user.googleId){
-                user.googleId = googleId;
-                await user.save();
-            }
-            console.log("Google user logged in:", user);
+        const username = req.body.username?.trim();
+        const email = normalizeEmail(req.body.email);
+        const password = req.body.password;
+
+        if (!username || !email || !password) {
+            return res.status(400).json({ message: 'Name, email, and password are required.' });
         }
-        
-        // Generate token and return response
-        return res.status(200).json({
-            msg: "Google login successful",
-            token: await user.generateToken(),
-            isAdmin: user.isAdmin || false
+        if (password.length < 8) {
+            return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+        }
+        if (await User.exists({ email })) {
+            return res.status(409).json({ message: 'An account with this email already exists.' });
+        }
+
+        const user = await User.create({
+            username,
+            email,
+            password: await bcrypt.hash(password, 12),
+            isAdmin: false,
         });
-        
-    } catch (error) {
-        console.log("Error in Google login:", error);
-        return res.status(500).json({msg: "Error in Google login", error: error.message});
-    }
-}
 
-module.exports = {registerUser,loginUser,googleLogin};
+        return res.status(201).json(await authResponse(user, 'Account created successfully.'));
+    } catch (error) {
+        console.error('Error creating user:', error);
+        return res.status(500).json({ message: 'Unable to create your account right now.' });
+    }
+};
+
+const loginUser = async (req, res) => {
+    try {
+        const email = normalizeEmail(req.body.email);
+        const password = req.body.password;
+        const user = await User.findOne({ email }).select('+password');
+
+        if (!user || !password) {
+            return res.status(401).json({ message: 'Email or password is incorrect.' });
+        }
+
+        const isHashed = user.password.startsWith('$2');
+        const passwordMatches = isHashed
+            ? await bcrypt.compare(password, user.password)
+            : password === user.password;
+
+        if (!passwordMatches) {
+            return res.status(401).json({ message: 'Email or password is incorrect.' });
+        }
+
+        // Upgrade accounts created before password hashing was added.
+        if (!isHashed) {
+            user.password = await bcrypt.hash(password, 12);
+            await user.save();
+        }
+
+        return res.status(200).json(await authResponse(user, 'Signed in successfully.'));
+    } catch (error) {
+        console.error('Error logging in:', error);
+        return res.status(500).json({ message: 'Unable to sign in right now.' });
+    }
+};
+
+const googleLogin = async (req, res) => {
+    try {
+        const credential = req.body.credential;
+        const googleClientId = process.env.GOOGLE_CLIENT_ID;
+
+        if (!credential || !googleClientId) {
+            return res.status(400).json({ message: 'Google sign-in is not configured.' });
+        }
+
+        const verification = await fetch(
+            `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+        );
+        const profile = await verification.json();
+
+        if (!verification.ok || profile.aud !== googleClientId || profile.email_verified !== 'true') {
+            return res.status(401).json({ message: 'Google could not verify this account.' });
+        }
+
+        const email = normalizeEmail(profile.email);
+        let user = await User.findOne({ email }).select('+password');
+
+        if (!user) {
+            user = await User.create({
+                username: profile.name || email.split('@')[0],
+                email,
+                googleId: profile.sub,
+                password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
+                isAdmin: false,
+            });
+        } else if (!user.googleId) {
+            user.googleId = profile.sub;
+            await user.save();
+        } else if (user.googleId !== profile.sub) {
+            return res.status(401).json({ message: 'This email is linked to another Google account.' });
+        }
+
+        return res.status(200).json(await authResponse(user, 'Signed in with Google.'));
+    } catch (error) {
+        console.error('Error in Google login:', error);
+        return res.status(500).json({ message: 'Unable to sign in with Google right now.' });
+    }
+};
+
+module.exports = { registerUser, loginUser, googleLogin };

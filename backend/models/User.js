@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
+const getJwtSecret = () => process.env.JWT_SECRET || 'Testkey';
+
 const UserSchema = new mongoose.Schema({
     username:{
         type:String,
@@ -9,11 +11,14 @@ const UserSchema = new mongoose.Schema({
     email:{
         type:String,
         required:true,
-        unique:true
+        unique:true,
+        lowercase:true,
+        trim:true
     },
     password:{
         type:String,
-        required:true
+        required:true,
+        select:false
     },
     isAdmin:{
         type:Boolean
@@ -31,7 +36,7 @@ UserSchema.methods.generateToken = function(){
             email: this.email ,
             isAdmin: this.isAdmin    
         },
-        "Testkey",
+        getJwtSecret(),
         {
             expiresIn:"2h",
         }

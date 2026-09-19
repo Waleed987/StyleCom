@@ -91,7 +91,7 @@ function Navbar() {
 
           <Handbag onClick={cartClick} className='group-hover:text-black text-white h-6 w-6'/>
 
-          <User className='group-hover:text-black text-white h-6 w-6'/>
+          <User onClick={() => navigate('/account')} className='group-hover:text-black h-6 w-6 cursor-pointer text-white'/>
         </div>
       </div>
       
@@ -111,7 +111,7 @@ function Navbar() {
 
           <Handbag onClick={cartClick} className='group-hover:text-black text-white h-6 w-6'/>
 
-          <User className='group-hover:text-black text-white h-6 w-6'/>
+          <User onClick={() => navigate('/account')} className='group-hover:text-black h-6 w-6 cursor-pointer text-white'/>
         </div>
     </nav>
 

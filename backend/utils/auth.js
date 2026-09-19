@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 
+const getJwtSecret = () => process.env.JWT_SECRET || 'Testkey';
+
 const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -11,7 +13,7 @@ const auth = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     req.user = decoded;
     next();
   } catch (error) {
@@ -22,4 +24,12 @@ const auth = async (req, res, next) => {
   }
 };
 
+const requireAdmin = (req, res, next) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  next();
+};
+
 module.exports = auth;
+module.exports.requireAdmin = requireAdmin;

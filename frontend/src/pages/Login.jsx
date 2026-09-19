@@ -1,161 +1,127 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import api from '../api';
+import { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from "jwt-decode";
+import { Eye, EyeOff } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import AuthShell from '../components/AuthShell';
+import { useAuth } from '../context/AuthContext';
+
+const inputClass = 'h-12 w-full border border-[#c9c4b9] bg-transparent px-4 text-sm outline-none transition focus:border-black';
+
+function errorMessage(error) {
+  return error.response?.data?.message || 'We could not sign you in. Please try again.';
+}
 
 function Login() {
   const navigate = useNavigate();
-  const [user,setUser] = useState({
-    email:"",
-    password:""
-  });
+  const location = useLocation();
+  const { signIn, signInWithGoogle } = useAuth();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const googleEnabled = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
-  const handleUserLoginChange = async(e)=>{
-    const {name,value} = e.target;
-    setUser((prev)=>({
-      ...prev,
-      [name]:value
-    }))
-  }
+  const finishSignIn = (user) => {
+    const requestedPage = location.state?.from;
+    navigate(user.isAdmin ? '/admin' : requestedPage || '/', { replace: true });
+  };
 
-  const handleUserLoginSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
     try {
-          const res = await api.post("/api/user/login",user);
-          console.log(res.data);
-         
-          if(res.data.token){
-            const decoded = jwtDecode(res.data.token);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('userData', JSON.stringify({
-              userId: decoded.userId || decoded._id,
-              isAdmin: decoded.isAdmin
-            }));
-          
-            if(decoded.isAdmin === true){
-             
-              navigate('/admin');
-            }
-            else{
-              console.log(decoded);
-              navigate('/home');
-            }
-          }
-
-          setUser({
-            email:"",
-            password:""
-          })
-    } catch (error) {
-      alert(error.message);
-    }
-  }
-
-  // Google OAuth success handler
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      console.log('Google OAuth success:', credentialResponse);
-      
-      // Decode the JWT token from Google
-      const decoded = jwtDecode(credentialResponse.credential);
-      console.log('Decoded Google user:', decoded);
-      
-      // Extract user information from Google response
-      const googleUser = {
-        email: decoded.email,
-        name: decoded.name,
-        picture: decoded.picture,
-        googleId: decoded.sub
-      };
-      
-      // Send Google user data to your backend for authentication
-      const res = await api.post("/api/user/google-login", googleUser);
-      
-      if(res.data.token){
-        const userDecoded = jwtDecode(res.data.token);
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('userData', JSON.stringify({
-          userId: userDecoded.userId || userDecoded._id,
-          isAdmin: userDecoded.isAdmin
-        }));
-        
-        if(userDecoded.isAdmin === true){
-          navigate('/admin');
-        } else {
-          console.log(userDecoded);
-          navigate('/');
-        }
-      }
-    } catch (error) {
-      console.error('Google login error:', error);
-      alert('Google login failed. Please try again.');
+      finishSignIn(await signIn(form));
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Google OAuth error handler
-  const handleGoogleError = () => {
-    console.log('Google OAuth failed');
-    alert('Google login failed. Please try again.');
+  const handleGoogleSuccess = async ({ credential }) => {
+    setError('');
+    setLoading(true);
+    try {
+      finishSignIn(await signInWithGoogle(credential));
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className='flex justify-center items-center h-screen w-screen bg-gradient-to-br from-black via-blue-900 to-slate-900'>
-        <div className='rounded-[20px] signupform px-3 py-9 flex flex-col  h-auto w-[clamp(400px,30%,80%)] bg-black border border-white space-y-6'>
-            <h1 className='text-white text-2xl space-y-4 text-center border-b-2 pb-5'>Sign in</h1>
-            
-            {/* Google OAuth Button */}
-            <div className='flex justify-center mb-4'>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                useOneTap
-                theme="filled_black"
-                size="large"
-                text="signin_with"
-                shape="rectangular"
-                width="300"
-              />
-            </div>
-            
-            {/* Divider */}
-            <div className='flex items-center'>
-              <div className='flex-1 border-t border-gray-600'></div>
-              <span className='px-3 text-gray-400 text-sm'>or</span>
-              <div className='flex-1 border-t border-gray-600'></div>
-            </div>
-            
-            <div className='p-2 email border-2 space-y-3 flex flex-col justify-center border-b'>
-                <h2 className='text-white text-xl'>Email</h2>
-                <input 
-                  name="email" 
-                  onChange={handleUserLoginChange} 
-                  value={user.email} 
-                  className='border w-[99%] h-10 rounded-[10px] bg-white hover:border-blue-400'
-                  placeholder="Enter your email"
-                />
-            </div>
-
-            <div className='p-2 email border-2 mb-3 space-y-3 flex flex-col justify-center'>
-                <h2 className='text-white text-xl'>Password</h2>
-                <input 
-                  name="password" 
-                  type="password"
-                  onChange={handleUserLoginChange} 
-                  value={user.password} 
-                  className='border w-[99%] h-10 rounded-[10px] bg-white hover:border-blue-400 mb-1'
-                  placeholder="Enter your password"
-                />
-                <a href='/resetpassword' className='font-serif text-red-500 text-right mr-[20px]'>Forgot Password</a>
-            </div>
-            <div className='w-full h-auto flex justify-center'>
-         
-            <button onClick={handleUserLoginSubmit} className='bg-white text-xl w-[150px] py-2 rounded-[10px]'>Sign in</button>
-            <button className='bg-white'><Link to='/signup'>Signup</Link></button>
-            </div>
+    <AuthShell
+      eyebrow="WELCOME BACK"
+      title="Sign in to your account"
+      description="Access your saved details, checkout faster, and keep track of every order."
+      footer={<>New to Rastah? <Link to="/signup" className="ml-1 font-medium text-black underline underline-offset-4">Create an account</Link></>}
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="login-email" className="mb-2 block text-xs font-medium tracking-[0.12em]">EMAIL ADDRESS</label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={form.email}
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
+            className={inputClass}
+            placeholder="you@example.com"
+          />
         </div>
-    </div>
-  )
+
+        <div>
+          <label htmlFor="login-password" className="mb-2 block text-xs font-medium tracking-[0.12em]">PASSWORD</label>
+          <div className="relative">
+            <input
+              id="login-password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              required
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              className={`${inputClass} pr-12`}
+              placeholder="Your password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              className="absolute right-0 top-0 flex h-12 w-12 items-center justify-center text-[#6d685f]"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        {error && <p role="alert" className="border-l-2 border-red-700 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-12 w-full bg-black text-xs font-semibold tracking-[0.2em] text-white transition hover:bg-[#2d2d28] disabled:cursor-wait disabled:opacity-60"
+        >
+          {loading ? 'SIGNING IN…' : 'SIGN IN'}
+        </button>
+      </form>
+
+      {googleEnabled && (
+        <>
+          <div className="my-6 flex items-center gap-4 text-[11px] tracking-[0.15em] text-[#8c877d]">
+            <span className="h-px flex-1 bg-[#d2cdc2]" /> OR CONTINUE WITH <span className="h-px flex-1 bg-[#d2cdc2]" />
+          </div>
+          <div className="flex justify-center">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google sign-in was cancelled or failed.')} width="400" />
+          </div>
+        </>
+      )}
+    </AuthShell>
+  );
 }
 
-export default Login    
+export default Login;

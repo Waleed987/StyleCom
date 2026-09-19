@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import { ArrowLeft, Package, Truck, CheckCircle, Clock } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 function OrderDetail() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const { token, user } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,10 +15,7 @@ function OrderDetail() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('userData');
-        
-        if (!token || !userData) {
+        if (!token || !user) {
           setError("Please login to view order details");
           setLoading(false);
           return;
@@ -46,7 +45,7 @@ function OrderDetail() {
     if (orderId) {
       fetchOrder();
     }
-  }, [orderId]);
+  }, [orderId, token, user]);
 
   const getStatusIcon = (status) => {
     switch (status) {

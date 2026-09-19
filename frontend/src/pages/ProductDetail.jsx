@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useAsyncValue } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Search, Heart, Handbag, User, AlignJustify, ArrowLeft, Star } from "lucide-react";
 import { getInventory } from "../catalog";
 import { useCart } from "../context/CartContext";
@@ -82,7 +82,7 @@ function Navbar() {
                 </span>
               )}
             </div>
-            <User className='text-black  h-6 w-6'/>
+            <User onClick={() => navigate('/account')} className='text-black h-6 w-6 cursor-pointer'/>
           </div>
         </div>
       </nav>
@@ -105,7 +105,7 @@ function Navbar() {
                 </span>
               )}
             </div>
-            <User className='group-hover:text-black  h-6 w-6'/>
+            <User onClick={() => navigate('/account')} className='group-hover:text-black h-6 w-6 cursor-pointer'/>
           </div>
       </nav>
       }
